@@ -1,0 +1,7 @@
+fastapi
+undetected_chromedriver
+selenium
+fake_useragent
+BeautifulSoup4
+uvicorn
+python-multipart
