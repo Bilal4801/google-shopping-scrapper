@@ -1,42 +1,72 @@
 import os
 import random
-import time
 from fastapi import FastAPI, Request
+import time
+from utils import GoogleShoppingData
 import undetected_chromedriver as uc
-from selenium import webdriver
-from selenium.webdriver.edge.service import Service
-from selenium.webdriver.edge.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-import requests
 from fake_useragent import UserAgent
 
 
-# app = FastAPI()
+app = FastAPI()
 
 
-def scrape_google_shopping(query):
+async def scrape_google_shopping(query):
 
-    USER_AGENT = UserAgent()
     options = uc.ChromeOptions()
-    # Configure Edge options
-    # options = Options()
-    # options.add_argument("--headless=new")
+
+    # # Configure Edge options
+    # # options = Options()
+
+    # Normal flags
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument(f"--user-agent={USER_AGENT.random}")
 
+    # Set a consistent but believable User-Agent
+    options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36")
+
+    # Mimic real screen size
+    width = random.randint(1280, 1920)
+    height = random.randint(720, 1080)
+    options.add_argument(f"--window-size={width},{height}")
+
+    # Download preferences
     prefs = {
         "download.default_directory": os.getcwd(),
         "download.prompt_for_download": False,
     }
     options.add_experimental_option("prefs", prefs)
 
-    driver = uc.Chrome(options=options)
+    # Create driver (uc takes care of the stealth part automatically)
+    driver = uc.Chrome(options=options, use_subprocess=True)
+    
+    # Patch webdriver-related JS variables
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+            Object.defineProperty(navigator, 'webdriver', {
+              get: () => undefined
+            });
+            Object.defineProperty(navigator, 'languages', {
+              get: () => ['en-US', 'en']
+            });
+            Object.defineProperty(navigator, 'platform', {
+              get: () => 'Win32'
+            });
+            Object.defineProperty(navigator, 'vendor', {
+              get: () => 'Google Inc.'
+            });
+            window.chrome = {
+              runtime: {},
+              // Add more spoofed properties if needed
+            };
+        """
+    })
+
     wait = WebDriverWait(driver, 30)
 
     # Setup Edge WebDriver
@@ -45,222 +75,203 @@ def scrape_google_shopping(query):
     try:
         # 1. go to google shopping
         driver.get("https://www.google.com/shopping?udm=28")
-        time.sleep(10)  # wait for the page to load
-
+        time.sleep(6)  # wait for the page to load
 
         # 2. upload via send_keys on the **second** input
-        inputs = driver.find_element(By.ID, 'APjFqb')
+        inputs = driver.find_element(By.ID, 'oDgap')
         inputs.send_keys(query)
         time.sleep(5)  # wait for the input to be processed
 
 
-        driver.find_element(By.XPATH, '//*[@id="tsf"]/div[1]/div[1]/div[2]/button').click()
-        time.sleep(6)  # wait for the search results to load
+        driver.find_element(By.XPATH, '//*[@id="tsf"]/div[1]/div[1]/div[1]/button').click()
+        time.sleep(5)  # wait for the search results to load
         # time.sleep(110)  # wait for the search results to load
-
-
         print("Search completed.")
         
-        # sitekey = "6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b"
-        # API_KEY = "9f45229e2e8317c07c3f0eace3eeeab2"
-
-
-        # captcha_id = requests.post("http://2captcha.com/in.php",
-        # data={
-        #     "key": API_KEY,
-        #     "method": "userrecaptcha",
-        #     "googlekey": sitekey,
-        #     "pageurl": "https://www.google.com/shopping?udm=28",
-        #     "json": 1,
-        # },
-        # ).json()["request"]
-
-        # print("Captcha ID:", captcha_id)
-
-        # # === Step 5: Poll for solution ===
-        # solution = None
-        # for _ in range(30):
-        #     res = requests.get(
-        #         f"http://2captcha.com/res.php?key={API_KEY}&action=get&id={captcha_id}&json=1"
-        #     ).json()
-            
-        #     if res["status"] == 1:
-        #         solution = res["request"]
-        #         print("Captcha Solved:", solution)
-        #         break
-        #     time.sleep(10)
-
-        # if not solution:
-        #     raise Exception("Captcha could not be solved in time.")
-
-        # # === Step 6: Inject the solution into the page ===
-        # driver.execute_script(
-        #     f'document.getElementById("g-recaptcha-response").innerHTML = "{solution}";'
-        # )
-        # driver.execute_script(
-        #     'var element = document.getElementById("g-recaptcha-response");'
-        #     'element.style.display = "block";'
-        # )
-
-        # time.sleep(2)
-
-        # print("captcha solved successfully")
-
-
-
-        # time.sleep(30)
-
-
-
-
-
         # Optionally scroll down (in case lazy loading or carousels)
-        driver.execute_script("window.scrollBy(0, 500);")
-        time.sleep(2) 
+        driver.execute_script("window.scrollBy(0, 300);")
+        time.sleep(1) 
+
+        # html_content = driver.page_source
+        # with open("captcha_page.html", "w", encoding="utf-8") as file:
+        #     file.write(html_content)
 
         try:
-            wait = WebDriverWait(driver, 10)
-            container = wait.until(EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "div.top-pla-group-inner")
-            ))
+            # driver.save_screenshot("SS1.png")
+            container = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pla-unit-container')))
 
-            # Get inner HTML of the container
-            inner_html = container.get_attribute("innerHTML")
-            # print(inner_html, "inner html")
+            if not container:
+                print('⚠️ Timeout waiting for product container.')
+                return "No products found."
 
 
-            soup = BeautifulSoup(inner_html, "html.parser")
-            print(soup.prettify(), "soup")
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            results = []
+            print("try case run")
 
-            # Now extract all links inside it
-            anchors = container.find_elements(By.TAG_NAME, "a")
-            # for anchor in anchors:
-            #     print(anchor, "anchor found in container")
-            print(f"Found {len(anchors)} links")
-            # for a in anchors:
-            #     print(a.get_attribute("href"))
+            for card in soup.select('div.pla-unit-container'):
+                name_tag = card.select_one('.pla-unit-title-link span')
+                price_tag = card.select_one('.T4OwTb span')
+                img_tag = card.select_one('.pla-unit-img-container img')
+                merchant_tag = card.select_one('.LbUacb span')
+                rating_tag = card.select_one('span[aria-label*="Rated"]')
+                product_url = card.select_one('a.pla-unit-title-link')['href']
 
-            # Use a set to store unique links
-            unique_links = set()
+                results.append({
+                    'name': name_tag.get_text(strip=True) if name_tag else None,
+                    'price': price_tag.get_text(strip=True) if price_tag else None,
+                    'image': img_tag['src'] if img_tag and img_tag.has_attr('src') else None,
+                    'rating': rating_tag['aria-label'] if rating_tag else None,
+                    'product_url': product_url if product_url else None
+                    # 'merchant': merchant_tag.get_text(strip=True) if merchant_tag else None,
+                })
 
-            for a in anchors:
-                href = a.get_attribute("href")
-                if href and href not in unique_links:
-                    unique_links.add(href)
-                    print(href)
-                else:
-                    continue
-            
-            # print(unique_links, "unique links found")
-            time.sleep(2)  # wait for the items to load
-
-            return unique_links
+            driver.quit()
+            return results
 
         except:
             try:
-                driver.save_screenshot("screenshot1.png")
+                # driver.save_screenshot("SS2.png")
                 container = driver.find_element(By.CLASS_NAME, "Z8PPnf")
-                print("Container found.", container)
+                product_divs = container.find_elements(By.CSS_SELECTOR, "div.gXGikb")
+                print("Exception case 1- Found product divs:", len(product_divs))
 
-                # Get all divs with class "gXGikb" (individual product cards)
-                product_divs = driver.find_elements("css selector", "div.gXGikb")
-
-                print("Exception case 1", "Number of product divs:", len(product_divs))
-                # Now extract info from each div
-                
                 product_results = []
                 for div in product_divs:
                     soup = BeautifulSoup(div.get_attribute("innerHTML"), "html.parser")
 
                     # Extract product name
-                    name_tag = soup.find("div", class_="PZPZlf")
-                    name = name_tag.get("data-entityname") if name_tag else None
+                    name_tag = soup.find("div", class_="gkQHve")
+                    name = name_tag.get_text(strip=True) if name_tag else None
 
-                    # Extract price (Google uses multiple formats, check common class name)
-                    price_tag = soup.find("span", string=lambda t: "$" in t if t else False)
-                    price = price_tag.text.strip() if price_tag else None
+                    # Extract price
+                    price_tag = soup.find("span", class_="lmQWe")
+                    price = price_tag.get_text(strip=True) if price_tag else None
 
-                    # Extract rating (look for aria-label like "Rated 4.5 out of 5")
-                    rating_tag = soup.find("span", attrs={"aria-label": True})
+                    # Extract rating - Only if aria-label contains "Rated"
+                    rating_tag = soup.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
                     rating = rating_tag["aria-label"] if rating_tag else None
 
-                    # Extract image src
+                    # Extract image
                     image_tag = soup.find("img", class_="VeBrne")
-                    image_url = image_tag.get("src") if image_tag else None
+                    image_url = image_tag.get("src") if image_tag  else None
 
                     product_results.append({
                         "name": name,
                         "price": price,
                         "rating": rating,
-                        "image": image_url
+                        "image": image_url,
+                        "product_url": None
                     })
 
+                driver.quit()
                 return product_results
             
             except:
-                driver.save_screenshot("screenshot2.png")
-                # Find the main div with class 'qaQ0y'
-                main_div = driver.find_element(By.XPATH, '//*[@id="rso"]/div[1]/div/div/g-card/div/div/div/div/div[2]/product-viewer-group/g-card/div/div[1]/div')
+                try:
 
-                # Find the <ul> inside it
-                ul = main_div.find_element(By.TAG_NAME, "ul")
+                    html_content = driver.page_source
+                    soup = BeautifulSoup(html_content, "html.parser")
+                    results = []
 
-                # Get all <div class="Ez5pwe"> inside that <ul>
-                items = ul.find_elements(By.CLASS_NAME, "Ez5pwe")
-                print("Exception case 2", "Number of product divs:", len(items))
+                    # New DOM structure: UL > LI.I8iMf
+                    product_list = soup.select("ul.lvS33d li.I8iMf")
+                    print(f"Exception case 2- Found, {len(product_list)} product cards")
 
-                product_results = []
-                for no, item in enumerate(items):
-                    soup = BeautifulSoup(item.get_attribute("innerHTML"), "html.parser")
+                    for card in product_list:
+                        # Product Name
+                        name_tag = card.select_one("div.gkQHve")
+                        name = name_tag.get_text(strip=True) if name_tag else None
 
-                    # Extracting Name
-                    name_tag = soup.select_one('div[aria-labelledby]')
-                    name = name_tag['title'] if name_tag and name_tag.has_attr('title') else None
+                        # Price
+                        price_tag = card.find("span", class_="lmQWe")
+                        price = price_tag.get_text(strip=True) if price_tag else None
 
-                    # Extracting Price (based on typical class or pattern, assuming it's inside span or div)
-                    price = None
-                    price_tag = soup.find('span', string=lambda text: text and '$' in text)
-                    if price_tag:
-                        price = price_tag.text.strip()
+                        # Rating
+                        rating_tag = card.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
+                        rating = rating_tag["aria-label"] if rating_tag else None
 
-                    # Extracting Rating (search for numbers with decimal like 4.5/5 etc.)
-                    rating = None
-                    for span in soup.find_all('span'):
-                        text = span.get_text(strip=True)
-                        if '/' in text and any(char.isdigit() for char in text):
-                            rating = text
-                            break
+                        # Image
+                        image_tag = card.find("img", class_="VeBrne")
+                        image_url = image_tag.get("src") if image_tag else None
 
-                    # Extracting Image URL
-                    img_tag = soup.find('img')
-                    image_url = img_tag['src'] if img_tag and img_tag.has_attr('src') else None
+                        # Product URL - optional, not always available
+                        link_tag = card.find("a", href=True)
+                        product_url = link_tag["href"] if link_tag else None
 
-                    # Final Result
-                    product_info = {
-                        'name': name,
-                        'price': price,
-                        'rating': rating,
-                        'image_url': image_url
-                    }
+                        results.append({
+                            "name": name,
+                            "price": price,
+                            "rating": rating,
+                            "image": image_url,
+                            "product_url": product_url
+                        })
 
-                    product_results.append(product_info)
-                
-                return product_results
-            
+                    driver.quit()
+                    return results if results else "❌ No products extracted."
+
+                except:
+                    # driver.save_screenshot("SS3.png")
+                    # Wait for items to be visible
+                    items = driver.find_elements(By.CSS_SELECTOR, "li.YBo8bb")
+                    print("Fallback - Exception Case: 3", len(items), "products")
+
+                    product_results = []
+
+                    for no, item in enumerate(items):
+                        soup = BeautifulSoup(item.get_attribute("innerHTML"), "html.parser")
+
+                        # Extracting Name
+                        name = None
+                        name_tag = soup.select_one("div.gkQHve.SsM98d.RmEs5b.gGeaLc")
+                        if name_tag:
+                            name = name_tag.get_text(strip=True)
+
+                        # Extracting Price
+                        price = None
+                        price_tag = soup.find("span", class_="lmQWe")
+                        if price_tag:
+                            price = price_tag.get_text(strip=True)
+
+                        # Extracting Rating
+                        rating = None
+                        rating_tag = soup.find("span", class_="z3HNkc")
+                        if rating_tag and rating_tag.has_attr("aria-label"):
+                            rating = rating_tag["aria-label"]
+
+                        # Extracting Image URL
+                        image_url = None
+                        image_tag = soup.find("img", class_="FsH7wb wtYWhc")
+                        if not image_tag:
+                            image_tag = soup.find("img", class_="uhHOwf ez24Df")
+                        if image_tag and image_tag.has_attr("src"):
+                            image_url = image_tag["src"]
+
+                        product_info = {
+                            "name": name,
+                            "price": price,
+                            "rating": rating,
+                            "image": image_url,
+                            "product_url": None
+                        }
+
+                        product_results.append(product_info)
+
+                    driver.quit()
+                    return product_results
+                        
     finally:
         driver.quit()
 
 
 
-# @app.post("/api/google_shopping")
-# async def main_function():
-#     data = scrape_google_shopping("LED spinner toys")
-#     print(data)
 
-data = scrape_google_shopping("LED Spinner")
-print(data)  # This will print None since the function does not return anything
+@app.post("/api/google_shopping")
+async def main_function(data: GoogleShoppingData):
 
-
+    user_query = data.query
+    data = await scrape_google_shopping(user_query)
+    return data
 
 
 
@@ -276,6 +287,24 @@ print(data)  # This will print None since the function does not return anything
 
 
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Optionally scroll down (in case lazy loading or carousels)
         # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")

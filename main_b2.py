@@ -148,13 +148,15 @@ def scrape_google_shopping(query):
             img_tag = card.select_one('.pla-unit-img-container img')
             merchant_tag = card.select_one('.LbUacb span')
             rating_tag = card.select_one('span[aria-label*="Rated"]')
+            product_url = card.select_one('a.pla-unit-title-link')['href']
 
             results.append({
                 'name': name_tag.get_text(strip=True) if name_tag else None,
                 'price': price_tag.get_text(strip=True) if price_tag else None,
                 'image': img_tag['src'] if img_tag and img_tag.has_attr('src') else None,
                 'merchant': merchant_tag.get_text(strip=True) if merchant_tag else None,
-                'rating': rating_tag['aria-label'] if rating_tag else None
+                'rating': rating_tag['aria-label'] if rating_tag else None,
+                'url': product_url if product_url else None
             })
 
         print(f"✅ Found {len(results)} products.")
