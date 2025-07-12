@@ -73,11 +73,11 @@ async def scrape_google_shopping(query):
         # 2. upload via send_keys on the **second** input
         inputs = driver.find_element(By.ID, 'oDgap')
         inputs.send_keys(query)
-        time.sleep(5)  # wait for the input to be processed
+        time.sleep(4)  # wait for the input to be processed
 
 
         driver.find_element(By.XPATH, '//*[@id="tsf"]/div[1]/div[1]/div[1]/button').click()
-        time.sleep(5)  # wait for the search results to load
+        time.sleep(3)  # wait for the search results to load
         print("Search completed.")
         
         # Optionally scroll down (in case lazy loading or carousels)
