@@ -323,10 +323,10 @@ async def scrape_google_shopping(query):
 
 
 @app.post("/api/google_shopping")
-async def main_function(data: GoogleShoppingData):
+async def main_function(search_query:str, selected_country: str):
 
-    user_query = data.search_query
-    selected_country = data.selected_country
+    user_query = search_query
+    selected_country = selected_country
     data = await scrape_google_shopping(user_query)
     return data
 
