@@ -325,6 +325,7 @@ async def scrape_google_shopping(query):
 async def main_function(data: GoogleShoppingData):
 
     user_query = data.query
+    selected_country = data.selected_country
     data = await scrape_google_shopping(user_query)
     return data
 

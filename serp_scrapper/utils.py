@@ -2,4 +2,5 @@ from pydantic import BaseModel
 
 
 class GoogleShoppingData(BaseModel):
-    query: str
+    search_query: str
+    selected_country: str
