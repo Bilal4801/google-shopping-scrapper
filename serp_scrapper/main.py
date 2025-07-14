@@ -167,7 +167,7 @@ async def scrape_google_shopping(query):
                     #     "product_url": None
                     # })
 
-                    results.append({
+                    product_results.append({
                         "position": None,
                         "title": name,
                         "product_link": None,
