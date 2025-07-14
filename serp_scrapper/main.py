@@ -103,14 +103,32 @@ async def scrape_google_shopping(query):
                 rating_tag = card.select_one('span[aria-label*="Rated"]')
                 product_url = card.select_one('a.pla-unit-title-link')['href']
 
+                # results.append({
+                #     'name': name_tag.get_text(strip=True) if name_tag else None,
+                #     'price': price_tag.get_text(strip=True) if price_tag else None,
+                #     'image': img_tag['src'] if img_tag and img_tag.has_attr('src') else None,
+                #     'rating': rating_tag['aria-label'] if rating_tag else None,
+                #     'product_url': product_url if product_url else None
+                #     # 'merchant': merchant_tag.get_text(strip=True) if merchant_tag else None,
+                # })
+
                 results.append({
-                    'name': name_tag.get_text(strip=True) if name_tag else None,
-                    'price': price_tag.get_text(strip=True) if price_tag else None,
-                    'image': img_tag['src'] if img_tag and img_tag.has_attr('src') else None,
-                    'rating': rating_tag['aria-label'] if rating_tag else None,
-                    'product_url': product_url if product_url else None
-                    # 'merchant': merchant_tag.get_text(strip=True) if merchant_tag else None,
-                })
+                    "position": None,
+                    "title": name_tag.get_text(strip=True) if name_tag else None,
+                    "product_link": product_url if product_url else None,
+                    "product_id": None,
+                    "serpapi_product_api": None,
+                    "immersive_product_page_token": None,
+                    "serpapi_immersive_product_api": None,
+                    "source": merchant_tag.get_text(strip=True) if merchant_tag else None,
+                    "source_icon": None,
+                    "price": price_tag.get_text(strip=True) if price_tag else None,
+                    "extracted_price": int(price_tag.get_text(strip=True)[1:]) if price_tag else None,
+                    "rating": rating_tag['aria-label'] if rating_tag else None,
+                    "reviews": None,
+                    "thumbnail": img_tag['src'] if img_tag and img_tag.has_attr('src') else None,
+                    "delivery": None
+                    })
 
             driver.quit()
             return results
@@ -141,12 +159,30 @@ async def scrape_google_shopping(query):
                     image_tag = soup.find("img", class_="VeBrne")
                     image_url = image_tag.get("src") if image_tag  else None
 
-                    product_results.append({
-                        "name": name,
+                    # product_results.append({
+                    #     "name": name,
+                    #     "price": price,
+                    #     "rating": rating,
+                    #     "image": image_url,
+                    #     "product_url": None
+                    # })
+
+                    results.append({
+                        "position": None,
+                        "title": name,
+                        "product_link": None,
+                        "product_id": None,
+                        "serpapi_product_api": None,
+                        "immersive_product_page_token": None,
+                        "serpapi_immersive_product_api": None,
+                        "source": None,
+                        "source_icon": None,
                         "price": price,
+                        "extracted_price": int(price[1:]) if price else None,
                         "rating": rating,
-                        "image": image_url,
-                        "product_url": None
+                        "reviews": None,
+                        "thumbnail": image_url,
+                        "delivery": None
                     })
 
                 driver.quit()
@@ -183,12 +219,31 @@ async def scrape_google_shopping(query):
                         link_tag = card.find("a", href=True)
                         product_url = link_tag["href"] if link_tag else None
 
+                        # results.append({
+                        #     "name": name,
+                        #     "price": price,
+                        #     "rating": rating,
+                        #     "image": image_url,
+                        #     "product_url": product_url
+                        # })
+
+
                         results.append({
-                            "name": name,
+                            "position": None,
+                            "title": name,
+                            "product_link": product_url,
+                            "product_id": None,
+                            "serpapi_product_api": None,
+                            "immersive_product_page_token": None,
+                            "serpapi_immersive_product_api": None,
+                            "source": None,
+                            "source_icon": None,
                             "price": price,
+                            "extracted_price": int(price[1:]) if price else None,
                             "rating": rating,
-                            "image": image_url,
-                            "product_url": product_url
+                            "reviews": None,
+                            "thumbnail": image_url,
+                            "delivery": None
                         })
 
                     driver.quit()
@@ -230,12 +285,30 @@ async def scrape_google_shopping(query):
                         if image_tag and image_tag.has_attr("src"):
                             image_url = image_tag["src"]
 
-                        product_info = {
-                            "name": name,
+                        # product_info = {
+                        #     "name": name,
+                        #     "price": price,
+                        #     "rating": rating,
+                        #     "image": image_url,
+                        #     "product_url": None
+                        # }
+                        
+                        product_info ={
+                            "position": None,
+                            "title": name,
+                            "product_link": None,
+                            "product_id": None,
+                            "serpapi_product_api": None,
+                            "immersive_product_page_token": None,
+                            "serpapi_immersive_product_api": None,
+                            "source": None,
+                            "source_icon": None,
                             "price": price,
+                            "extracted_price": int(price[1:]) if price else None,
                             "rating": rating,
-                            "image": image_url,
-                            "product_url": None
+                            "reviews": None,
+                            "thumbnail": image_url,
+                            "delivery": None
                         }
 
                         product_results.append(product_info)
@@ -255,3 +328,39 @@ async def main_function(data: GoogleShoppingData):
     data = await scrape_google_shopping(user_query)
     return data
 
+
+
+
+
+
+
+
+
+
+
+# inside_url = driver.find_element(By.XPATH, '//*[@id="rSanR"]/div[4]/div/div/div/div[3]/div/div[7]/div/div/div/div/div[1]/div[1]/div[2]/div')
+# soup = BeautifulSoup(inside_url, 'html.parser')
+
+# offers = []
+
+# for offer in soup.select('div[role="listitem"]'):
+#     try:
+#         retailer = offer.select_one('.hP4iBf.gUf0b.uWvFpd')
+#         price = offer.select_one('.GBgquf, .Pgbknd, .wepMxd')
+#         product = offer.select_one('.Rp8BL.CpcIhb.y1FcZd.rYkzq')
+#         availability = offer.select_one('.gASiG.jvP2Jb.jIpmhc')
+#         url = offer.select_one('a')['href']
+
+#         offers.append({
+#             'retailer': retailer.text.strip() if retailer else None,
+#             'price': price.text.strip() if price else None,
+#             'product': product.text.strip() if product else None,
+#             'availability': availability.text.strip() if availability else None,
+#             'url': url
+#         })
+#     except Exception as e:
+#         print("Error parsing an offer:", e)
+
+# # Output
+# for offer in offers:
+#     print(offer, "offer 1")
