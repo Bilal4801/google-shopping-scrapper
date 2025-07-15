@@ -68,12 +68,12 @@ async def scrape_google_shopping(query):
     try:
         # 1. go to google shopping
         driver.get("https://www.google.com/shopping?udm=28")
-        time.sleep(6)  # wait for the page to load
+        time.sleep(3)  # wait for the page to load
 
         # 2. upload via send_keys on the **second** input
         inputs = driver.find_element(By.ID, 'oDgap')
         inputs.send_keys(query)
-        time.sleep(4)  # wait for the input to be processed
+        time.sleep(2)  # wait for the input to be processed
 
 
         driver.find_element(By.XPATH, '//*[@id="tsf"]/div[1]/div[1]/div[1]/button').click()
@@ -82,7 +82,6 @@ async def scrape_google_shopping(query):
         
         # Optionally scroll down (in case lazy loading or carousels)
         driver.execute_script("window.scrollBy(0, 300);")
-        time.sleep(1) 
 
         try:
             container = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pla-unit-container')))
