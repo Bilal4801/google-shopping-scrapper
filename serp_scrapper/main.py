@@ -112,6 +112,10 @@ async def scrape_google_shopping(query):
                 #     # 'merchant': merchant_tag.get_text(strip=True) if merchant_tag else None,
                 # })
 
+
+                pr_tag = price_tag.get_text(strip=True)
+                price_float = float(pr_tag[1:].replace(',', ''))
+
                 results.append({
                     "position": None,
                     "title": name_tag.get_text(strip=True) if name_tag else None,
@@ -123,7 +127,7 @@ async def scrape_google_shopping(query):
                     "source": merchant_tag.get_text(strip=True) if merchant_tag else None,
                     "source_icon": None,
                     "price": price_tag.get_text(strip=True) if price_tag else None,
-                    "extracted_price": None,
+                    "extracted_price": price_float,
                     "rating": rating_tag['aria-label'] if rating_tag else None,
                     "reviews": None,
                     "thumbnail": img_tag['src'] if img_tag and img_tag.has_attr('src') else None,
@@ -167,8 +171,7 @@ async def scrape_google_shopping(query):
                     #     "image": image_url,
                     #     "product_url": None
                     # })
-
-                    # print(int(price[1:]), "hsjamc sdmcdsx")
+                    
                     product_results.append({
                         "position": None,
                         "title": name,
@@ -180,7 +183,7 @@ async def scrape_google_shopping(query):
                         "source": None,
                         "source_icon": None,
                         "price": price,
-                        "extracted_price": None,
+                        "extracted_price": float(price[1:].replace(',', '')),
                         "rating": rating,
                         "reviews": None,
                         "thumbnail": image_url,
@@ -230,7 +233,6 @@ async def scrape_google_shopping(query):
                         #     "product_url": product_url
                         # })
 
-
                         results.append({
                             "position": None,
                             "title": name,
@@ -242,7 +244,7 @@ async def scrape_google_shopping(query):
                             "source": None,
                             "source_icon": None,
                             "price": price,
-                            "extracted_price": None,
+                            "extracted_price": float(price[1:].replace(',', '')),
                             "rating": rating,
                             "reviews": None,
                             "thumbnail": image_url,
@@ -297,7 +299,7 @@ async def scrape_google_shopping(query):
                         #     "image": image_url,
                         #     "product_url": None
                         # }
-                        
+
                         product_info ={
                             "position": None,
                             "title": name,
@@ -309,7 +311,7 @@ async def scrape_google_shopping(query):
                             "source": None,
                             "source_icon": None,
                             "price": price,
-                            "extracted_price": None,
+                            "extracted_price": float(price[1:].replace(',', '')),
                             "rating": rating,
                             "reviews": None,
                             "thumbnail": image_url,
