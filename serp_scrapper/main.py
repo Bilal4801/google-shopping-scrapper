@@ -103,16 +103,6 @@ async def scrape_google_shopping(query):
                 rating_tag = card.select_one('span[aria-label*="Rated"]')
                 product_url = card.select_one('a.pla-unit-title-link')['href']
 
-                # results.append({
-                #     'name': name_tag.get_text(strip=True) if name_tag else None,
-                #     'price': price_tag.get_text(strip=True) if price_tag else None,
-                #     'image': img_tag['src'] if img_tag and img_tag.has_attr('src') else None,
-                #     'rating': rating_tag['aria-label'] if rating_tag else None,
-                #     'product_url': product_url if product_url else None
-                #     # 'merchant': merchant_tag.get_text(strip=True) if merchant_tag else None,
-                # })
-
-
                 pr_tag = price_tag.get_text(strip=True)
                 price_float = float(pr_tag[1:].replace(',', ''))
 
@@ -164,14 +154,6 @@ async def scrape_google_shopping(query):
                     image_tag = soup.find("img", class_="VeBrne")
                     image_url = image_tag.get("src") if image_tag  else None
 
-                    # product_results.append({
-                    #     "name": name,
-                    #     "price": price,
-                    #     "rating": rating,
-                    #     "image": image_url,
-                    #     "product_url": None
-                    # })
-                    
                     product_results.append({
                         "position": None,
                         "title": name,
@@ -224,14 +206,6 @@ async def scrape_google_shopping(query):
                         # Product URL - optional, not always available
                         link_tag = card.find("a", href=True)
                         product_url = link_tag["href"] if link_tag else None
-
-                        # results.append({
-                        #     "name": name,
-                        #     "price": price,
-                        #     "rating": rating,
-                        #     "image": image_url,
-                        #     "product_url": product_url
-                        # })
 
                         results.append({
                             "position": None,
@@ -291,14 +265,6 @@ async def scrape_google_shopping(query):
                             image_tag = soup.find("img", class_="uhHOwf ez24Df")
                         if image_tag and image_tag.has_attr("src"):
                             image_url = image_tag["src"]
-
-                        # product_info = {
-                        #     "name": name,
-                        #     "price": price,
-                        #     "rating": rating,
-                        #     "image": image_url,
-                        #     "product_url": None
-                        # }
 
                         product_info ={
                             "position": None,
