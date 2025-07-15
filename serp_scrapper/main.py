@@ -131,7 +131,8 @@ async def scrape_google_shopping(query):
                     })
 
             driver.quit()
-            return results
+            dict = {"search_result": results}
+            return dict
 
         except:
             try:
@@ -187,8 +188,9 @@ async def scrape_google_shopping(query):
                     })
 
                 driver.quit()
-                return product_results
-            
+                dict = {"search_result": product_results}
+                return dict
+
             except:
                 try:
                     html_content = driver.page_source
@@ -248,7 +250,9 @@ async def scrape_google_shopping(query):
                         })
 
                     driver.quit()
-                    return results if results else "❌ No products extracted."
+                    
+                    dict = {"search_result": results}
+                    return dict
 
                 except:
                     # Wait for items to be visible
@@ -315,7 +319,8 @@ async def scrape_google_shopping(query):
                         product_results.append(product_info)
 
                     driver.quit()
-                    return product_results
+                    dict = {"search_result": product_results}
+                    return dict
                         
     finally:
         driver.quit()
