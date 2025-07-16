@@ -9,10 +9,25 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+import re
 
 
 app = FastAPI()
 
+
+def extract_price(price_str):
+    """
+    Extracts numeric price from a string and returns it as a float.
+    If no valid price is found, returns None.
+    """
+    match = re.search(r'[\d,.]+', price_str)
+    if match:
+        # Remove commas and convert to float
+        try:
+            return float(match.group().replace(',', ''))
+        except ValueError:
+            return None
+    return None
 
 async def scrape_google_shopping(query):
 
@@ -103,7 +118,7 @@ async def scrape_google_shopping(query):
                 product_url = card.select_one('a.pla-unit-title-link')['href']
 
                 pr_tag = price_tag.get_text(strip=True)
-                price_float = float(pr_tag[1:].replace(',', ''))
+                price_float = extract_price(pr_tag)
 
                 results.append({
                     "position": None,
@@ -161,6 +176,7 @@ async def scrape_google_shopping(query):
                     image_tag = soup.find("img", class_="VeBrne")
                     image_url = image_tag.get("src") if image_tag  else None
 
+                    extract_price_value = extract_price(price)
                     product_results.append({
                         "position": None,
                         "title": name,
@@ -172,7 +188,7 @@ async def scrape_google_shopping(query):
                         "source": None,
                         "source_icon": None,
                         "price": price,
-                        "extracted_price": float(price[1:].replace(',', '')),
+                        "extracted_price": extract_price_value,
                         "rating": rating,
                         "reviews": None,
                         "thumbnail": image_url,
@@ -220,6 +236,7 @@ async def scrape_google_shopping(query):
                         link_tag = card.find("a", href=True)
                         product_url = link_tag["href"] if link_tag else None
 
+                        extract_price_value = extract_price(price)
                         results.append({
                             "position": None,
                             "title": name,
@@ -231,7 +248,7 @@ async def scrape_google_shopping(query):
                             "source": None,
                             "source_icon": None,
                             "price": price,
-                            "extracted_price": float(price[1:].replace(',', '')),
+                            "extracted_price": extract_price_value,
                             "rating": rating,
                             "reviews": None,
                             "thumbnail": image_url,
@@ -279,6 +296,7 @@ async def scrape_google_shopping(query):
                         if image_tag and image_tag.has_attr("src"):
                             image_url = image_tag["src"]
 
+                        extract_price_value = extract_price(price)
                         product_info ={
                             "position": None,
                             "title": name,
@@ -290,7 +308,7 @@ async def scrape_google_shopping(query):
                             "source": None,
                             "source_icon": None,
                             "price": price,
-                            "extracted_price": float(price[1:].replace(',', '')),
+                            "extracted_price": extract_price_value,
                             "rating": rating,
                             "reviews": None,
                             "thumbnail": image_url,
