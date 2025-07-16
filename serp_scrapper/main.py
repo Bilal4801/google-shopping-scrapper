@@ -141,13 +141,21 @@ async def scrape_google_shopping(query):
                     name_tag = soup.find("div", class_="gkQHve")
                     name = name_tag.get_text(strip=True) if name_tag else None
 
+                    # Extract product ID
+                    data_id = soup.find("div", class_="liKJmf wTrwWd")
+                    product_id = data_id.get("data-cid") if data_id else None
+
                     # Extract price
                     price_tag = soup.find("span", class_="lmQWe")
                     price = price_tag.get_text(strip=True) if price_tag else None
 
-                    # Extract rating - Only if aria-label contains "Rated"
-                    rating_tag = soup.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
-                    rating = rating_tag["aria-label"] if rating_tag else None
+                    try:
+                        # Extract rating - Only if aria-label contains "Rated"
+                        rating_tag = soup.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
+                        rating = rating_tag["aria-label"] if rating_tag else None
+
+                    except:
+                        rating = None
 
                     # Extract image
                     image_tag = soup.find("img", class_="VeBrne")
@@ -157,7 +165,7 @@ async def scrape_google_shopping(query):
                         "position": None,
                         "title": name,
                         "product_link": None,
-                        "product_id": None,
+                        "product_id": product_id,
                         "serpapi_product_api": None,
                         "immersive_product_page_token": None,
                         "serpapi_immersive_product_api": None,
@@ -190,13 +198,19 @@ async def scrape_google_shopping(query):
                         name_tag = card.select_one("div.gkQHve")
                         name = name_tag.get_text(strip=True) if name_tag else None
 
+                        data_id = card.find("div", class_="MtXiu mZ9c3d wYFOId M919M W5CKGc wTrwWd")
+                        product_id = data_id.get("data-cid") if data_id else None
+
                         # Price
                         price_tag = card.find("span", class_="lmQWe")
                         price = price_tag.get_text(strip=True) if price_tag else None
 
-                        # Rating
-                        rating_tag = card.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
-                        rating = rating_tag["aria-label"] if rating_tag else None
+                        try:
+                            # Rating
+                            rating_tag = card.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
+                            rating = rating_tag["aria-label"] if rating_tag else None
+                        except:
+                            rating = None
 
                         # Image
                         image_tag = card.find("img", class_="VeBrne")
@@ -210,7 +224,7 @@ async def scrape_google_shopping(query):
                             "position": None,
                             "title": name,
                             "product_link": product_url,
-                            "product_id": None,
+                            "product_id": product_id,
                             "serpapi_product_api": None,
                             "immersive_product_page_token": None,
                             "serpapi_immersive_product_api": None,
