@@ -99,88 +99,103 @@ async def scrape_google_shopping(query):
         driver.execute_script("window.scrollBy(0, 300);")
 
         try:
-            container = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.pla-unit-container')))
+            container = driver.find_element(By.CLASS_NAME, "Z8PPnf")
+            product_divs = container.find_elements(By.CSS_SELECTOR, "div.gXGikb")
+            print("Exception case 1- Found product divs:", len(product_divs))
 
-            if not container:
-                print('⚠️ Timeout waiting for product container.')
-                return "No products found."
+            product_results = []
+            for div in product_divs:
+                soup = BeautifulSoup(div.get_attribute("innerHTML"), "html.parser")
 
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-            results = []
-            print("try case run")
+                # Extract product name
+                name_tag = soup.find("div", class_="gkQHve")
+                name = name_tag.get_text(strip=True) if name_tag else None
 
-            for card in soup.select('div.pla-unit-container'):
-                name_tag = card.select_one('.pla-unit-title-link span')
-                price_tag = card.select_one('.T4OwTb span')
-                img_tag = card.select_one('.pla-unit-img-container img')
-                merchant_tag = card.select_one('.LbUacb span')
-                rating_tag = card.select_one('span[aria-label*="Rated"]')
-                product_url = card.select_one('a.pla-unit-title-link')['href']
+                # Extract product ID
+                data_id = soup.find("div", class_="liKJmf wTrwWd")
+                product_id = data_id.get("data-cid") if data_id else None
 
-                pr_tag = price_tag.get_text(strip=True)
-                price_float = extract_price(pr_tag)
+                # Extract price
+                price_tag = soup.find("span", class_="lmQWe")
+                price = price_tag.get_text(strip=True) if price_tag else None
 
-                results.append({
+                try:
+                    # Extract rating - Only if aria-label contains "Rated"
+                    rating_tag = soup.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
+                    rating = rating_tag["aria-label"] if rating_tag else None
+
+                except:
+                    rating = None
+
+                # Extract image
+                image_tag = soup.find("img", class_="VeBrne")
+                image_url = image_tag.get("src") if image_tag  else None
+
+                extract_price_value = extract_price(price)
+                product_results.append({
                     "position": None,
-                    "title": name_tag.get_text(strip=True) if name_tag else None,
-                    "product_link": product_url if product_url else None,
-                    "product_id": None,
+                    "title": name,
+                    "product_link": None,
+                    "product_id": product_id,
                     "serpapi_product_api": None,
                     "immersive_product_page_token": None,
                     "serpapi_immersive_product_api": None,
-                    "source": merchant_tag.get_text(strip=True) if merchant_tag else None,
+                    "source": None,
                     "source_icon": None,
-                    "price": price_tag.get_text(strip=True) if price_tag else None,
-                    "extracted_price": price_float,
-                    "rating": rating_tag['aria-label'] if rating_tag else None,
+                    "price": price,
+                    "extracted_price": extract_price_value,
+                    "rating": rating,
                     "reviews": None,
-                    "thumbnail": img_tag['src'] if img_tag and img_tag.has_attr('src') else None,
+                    "thumbnail": image_url,
                     "delivery": None
-                    })
+                })
 
             driver.quit()
-            dict = {"search_result": results}
+            dict = {"search_result": product_results}
             return dict
 
         except:
             try:
-                container = driver.find_element(By.CLASS_NAME, "Z8PPnf")
-                product_divs = container.find_elements(By.CSS_SELECTOR, "div.gXGikb")
-                print("Exception case 1- Found product divs:", len(product_divs))
+                html_content = driver.page_source
+                soup = BeautifulSoup(html_content, "html.parser")
+                results = []
 
-                product_results = []
-                for div in product_divs:
-                    soup = BeautifulSoup(div.get_attribute("innerHTML"), "html.parser")
+                # New DOM structure: UL > LI.I8iMf
+                product_list = soup.select("ul.lvS33d li.I8iMf")
+                print(f"Exception case 2- Found, {len(product_list)} product cards")
 
-                    # Extract product name
-                    name_tag = soup.find("div", class_="gkQHve")
+                for card in product_list:
+                    # Product Name
+                    name_tag = card.select_one("div.gkQHve")
                     name = name_tag.get_text(strip=True) if name_tag else None
 
-                    # Extract product ID
-                    data_id = soup.find("div", class_="liKJmf wTrwWd")
+                    data_id = card.find("div", class_="MtXiu mZ9c3d wYFOId M919M W5CKGc wTrwWd")
                     product_id = data_id.get("data-cid") if data_id else None
 
-                    # Extract price
-                    price_tag = soup.find("span", class_="lmQWe")
+                    # Price
+                    price_tag = card.find("span", class_="lmQWe")
                     price = price_tag.get_text(strip=True) if price_tag else None
 
                     try:
-                        # Extract rating - Only if aria-label contains "Rated"
-                        rating_tag = soup.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
+                        # Rating
+                        rating_tag = card.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
                         rating = rating_tag["aria-label"] if rating_tag else None
-
                     except:
                         rating = None
 
-                    # Extract image
-                    image_tag = soup.find("img", class_="VeBrne")
-                    image_url = image_tag.get("src") if image_tag  else None
+                    # Image
+                    image_tag = card.find("img", class_="VeBrne")
+                    image_url = image_tag.get("src") if image_tag else None
+
+                    # Product URL - optional, not always available
+                    link_tag = card.find("a", href=True)
+                    product_url = link_tag["href"] if link_tag else None
 
                     extract_price_value = extract_price(price)
-                    product_results.append({
+                    results.append({
                         "position": None,
                         "title": name,
-                        "product_link": None,
+                        "product_link": product_url,
                         "product_id": product_id,
                         "serpapi_product_api": None,
                         "immersive_product_page_token": None,
@@ -196,131 +211,71 @@ async def scrape_google_shopping(query):
                     })
 
                 driver.quit()
-                dict = {"search_result": product_results}
+                
+                dict = {"search_result": results}
                 return dict
 
             except:
-                try:
-                    html_content = driver.page_source
-                    soup = BeautifulSoup(html_content, "html.parser")
-                    results = []
+                # Wait for items to be visible
+                items = driver.find_elements(By.CSS_SELECTOR, "li.YBo8bb")
+                print("Fallback - Exception Case: 3", len(items), "products")
 
-                    # New DOM structure: UL > LI.I8iMf
-                    product_list = soup.select("ul.lvS33d li.I8iMf")
-                    print(f"Exception case 2- Found, {len(product_list)} product cards")
+                product_results = []
 
-                    for card in product_list:
-                        # Product Name
-                        name_tag = card.select_one("div.gkQHve")
-                        name = name_tag.get_text(strip=True) if name_tag else None
+                for no, item in enumerate(items):
+                    soup = BeautifulSoup(item.get_attribute("innerHTML"), "html.parser")
 
-                        data_id = card.find("div", class_="MtXiu mZ9c3d wYFOId M919M W5CKGc wTrwWd")
-                        product_id = data_id.get("data-cid") if data_id else None
+                    # Extracting Name
+                    name = None
+                    name_tag = soup.select_one("div.gkQHve.SsM98d.RmEs5b.gGeaLc")
+                    if name_tag:
+                        name = name_tag.get_text(strip=True)
 
-                        # Price
-                        price_tag = card.find("span", class_="lmQWe")
-                        price = price_tag.get_text(strip=True) if price_tag else None
+                    # Extracting Price
+                    price = None
+                    price_tag = soup.find("span", class_="lmQWe")
+                    if price_tag:
+                        price = price_tag.get_text(strip=True)
 
-                        try:
-                            # Rating
-                            rating_tag = card.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
-                            rating = rating_tag["aria-label"] if rating_tag else None
-                        except:
-                            rating = None
+                    # Extracting Rating
+                    rating = None
+                    rating_tag = soup.find("span", class_="z3HNkc")
+                    if rating_tag and rating_tag.has_attr("aria-label"):
+                        rating = rating_tag["aria-label"]
 
-                        # Image
-                        image_tag = card.find("img", class_="VeBrne")
-                        image_url = image_tag.get("src") if image_tag else None
+                    # Extracting Image URL
+                    image_url = None
+                    image_tag = soup.find("img", class_="FsH7wb wtYWhc")
+                    if not image_tag:
+                        image_tag = soup.find("img", class_="uhHOwf ez24Df")
+                    if image_tag and image_tag.has_attr("src"):
+                        image_url = image_tag["src"]
 
-                        # Product URL - optional, not always available
-                        link_tag = card.find("a", href=True)
-                        product_url = link_tag["href"] if link_tag else None
+                    extract_price_value = extract_price(price)
+                    product_info ={
+                        "position": None,
+                        "title": name,
+                        "product_link": None,
+                        "product_id": None,
+                        "serpapi_product_api": None,
+                        "immersive_product_page_token": None,
+                        "serpapi_immersive_product_api": None,
+                        "source": None,
+                        "source_icon": None,
+                        "price": price,
+                        "extracted_price": extract_price_value,
+                        "rating": rating,
+                        "reviews": None,
+                        "thumbnail": image_url,
+                        "delivery": None
+                    }
 
-                        extract_price_value = extract_price(price)
-                        results.append({
-                            "position": None,
-                            "title": name,
-                            "product_link": product_url,
-                            "product_id": product_id,
-                            "serpapi_product_api": None,
-                            "immersive_product_page_token": None,
-                            "serpapi_immersive_product_api": None,
-                            "source": None,
-                            "source_icon": None,
-                            "price": price,
-                            "extracted_price": extract_price_value,
-                            "rating": rating,
-                            "reviews": None,
-                            "thumbnail": image_url,
-                            "delivery": None
-                        })
+                    product_results.append(product_info)
 
-                    driver.quit()
+                driver.quit()
+                dict = {"search_result": product_results}
+                return dict
                     
-                    dict = {"search_result": results}
-                    return dict
-
-                except:
-                    # Wait for items to be visible
-                    items = driver.find_elements(By.CSS_SELECTOR, "li.YBo8bb")
-                    print("Fallback - Exception Case: 3", len(items), "products")
-
-                    product_results = []
-
-                    for no, item in enumerate(items):
-                        soup = BeautifulSoup(item.get_attribute("innerHTML"), "html.parser")
-
-                        # Extracting Name
-                        name = None
-                        name_tag = soup.select_one("div.gkQHve.SsM98d.RmEs5b.gGeaLc")
-                        if name_tag:
-                            name = name_tag.get_text(strip=True)
-
-                        # Extracting Price
-                        price = None
-                        price_tag = soup.find("span", class_="lmQWe")
-                        if price_tag:
-                            price = price_tag.get_text(strip=True)
-
-                        # Extracting Rating
-                        rating = None
-                        rating_tag = soup.find("span", class_="z3HNkc")
-                        if rating_tag and rating_tag.has_attr("aria-label"):
-                            rating = rating_tag["aria-label"]
-
-                        # Extracting Image URL
-                        image_url = None
-                        image_tag = soup.find("img", class_="FsH7wb wtYWhc")
-                        if not image_tag:
-                            image_tag = soup.find("img", class_="uhHOwf ez24Df")
-                        if image_tag and image_tag.has_attr("src"):
-                            image_url = image_tag["src"]
-
-                        extract_price_value = extract_price(price)
-                        product_info ={
-                            "position": None,
-                            "title": name,
-                            "product_link": None,
-                            "product_id": None,
-                            "serpapi_product_api": None,
-                            "immersive_product_page_token": None,
-                            "serpapi_immersive_product_api": None,
-                            "source": None,
-                            "source_icon": None,
-                            "price": price,
-                            "extracted_price": extract_price_value,
-                            "rating": rating,
-                            "reviews": None,
-                            "thumbnail": image_url,
-                            "delivery": None
-                        }
-
-                        product_results.append(product_info)
-
-                    driver.quit()
-                    dict = {"search_result": product_results}
-                    return dict
-                        
     finally:
         driver.quit()
 
