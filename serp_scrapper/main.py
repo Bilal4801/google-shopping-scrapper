@@ -372,7 +372,7 @@ def initialize_browser():
         try:
             global_driver = create_browser()
             global_driver.get("https://www.google.com/shopping?udm=28")
-            time.sleep(3)  # Allow initial page load
+            time.sleep(2)  # Allow initial page load
             print("Global browser initialized successfully")
         except Exception as e:
             print(f"Failed to initialize browser: {e}")
@@ -391,13 +391,13 @@ def scrape_google_shopping_sync(query, request_id):
 
         # Navigate to fresh Google Shopping page for each request
         global_driver.get("https://www.google.com/shopping?udm=28")
-        time.sleep(random.uniform(2, 4))  # Random delay to mimic human behavior
+        time.sleep(random.uniform(1, 3))  # Random delay to mimic human behavior
 
         # Send query to search input
         inputs = wait.until(EC.presence_of_element_located((By.ID, 'oDgap')))
         inputs.clear()
         inputs.send_keys(query)
-        time.sleep(2)
+        time.sleep(1)
 
         global_driver.find_element(By.XPATH, '//*[@id="tsf"]/div[1]/div[1]/div[1]/button').click()
         time.sleep(3)
