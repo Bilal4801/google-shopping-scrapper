@@ -420,9 +420,17 @@ def scrape_google_shopping_sync(query, request_id):
 
                 data_id = soup.find("div", class_="liKJmf wTrwWd")
                 product_id = data_id.get("data-cid") if data_id else None
+                print(product_id, "product id 1")
 
+                if not product_id:
+                    continue
+                
                 price_tag = soup.find("span", class_="lmQWe")
                 price = price_tag.get_text(strip=True) if price_tag else None
+                
+                # ✅ NEW: Extract merchant name
+                merchant_tag = soup.find("span", class_="WJMUdc rw5ecc")
+                merchant_name = merchant_tag.get_text(strip=True) if merchant_tag else None
 
                 try:
                     rating_tag = soup.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
@@ -442,7 +450,7 @@ def scrape_google_shopping_sync(query, request_id):
                     "serpapi_product_api": None,
                     "immersive_product_page_token": None,
                     "serpapi_immersive_product_api": None,
-                    "source": None,
+                    "source": merchant_name,
                     "source_icon": None,
                     "price": price,
                     "extracted_price": extract_price_value,
@@ -472,9 +480,16 @@ def scrape_google_shopping_sync(query, request_id):
 
                     data_id = card.find("div", class_="MtXiu mZ9c3d wYFOId M919M W5CKGc wTrwWd")
                     product_id = data_id.get("data-cid") if data_id else None
+                    print(product_id, "product id 2")
+
+                    if not product_id:
+                        continue
 
                     price_tag = card.find("span", class_="lmQWe")
                     price = price_tag.get_text(strip=True) if price_tag else None
+                    
+                    merchant_tag = card.find("span", class_="WJMUdc rw5ecc")
+                    merchant_name = merchant_tag.get_text(strip=True) if merchant_tag else None
 
                     try:
                         rating_tag = card.find("span", attrs={"aria-label": lambda x: x and "Rated" in x})
@@ -485,8 +500,7 @@ def scrape_google_shopping_sync(query, request_id):
                     image_tag = card.find("img", class_="VeBrne")
                     image_url = image_tag.get("src") if image_tag else None
 
-                    link_tag = card.find("a", href=True)
-                    product_url = link_tag["href"] if link_tag else None
+                    product_url = None
 
                     extract_price_value = extract_price(price)
                     results.append({
@@ -497,7 +511,7 @@ def scrape_google_shopping_sync(query, request_id):
                         "serpapi_product_api": None,
                         "immersive_product_page_token": None,
                         "serpapi_immersive_product_api": None,
-                        "source": None,
+                        "source": merchant_name,
                         "source_icon": None,
                         "price": price,
                         "extracted_price": extract_price_value,
@@ -530,6 +544,9 @@ def scrape_google_shopping_sync(query, request_id):
                     rating_tag = soup.find("span", class_="z3HNkc")
                     rating = rating_tag["aria-label"] if rating_tag and rating_tag.has_attr("aria-label") else None
 
+                    merchant_tag = soup.find("span", class_="WJMUdc rw5ecc")
+                    merchant_name = merchant_tag.get_text(strip=True) if merchant_tag else None
+
                     image_tag = soup.find("img", class_="FsH7wb wtYWhc")
                     if not image_tag:
                         image_tag = soup.find("img", class_="uhHOwf ez24Df")
@@ -544,7 +561,7 @@ def scrape_google_shopping_sync(query, request_id):
                         "serpapi_product_api": None,
                         "immersive_product_page_token": None,
                         "serpapi_immersive_product_api": None,
-                        "source": None,
+                        "source": merchant_name,
                         "source_icon": None,
                         "price": price,
                         "extracted_price": extract_price_value,
